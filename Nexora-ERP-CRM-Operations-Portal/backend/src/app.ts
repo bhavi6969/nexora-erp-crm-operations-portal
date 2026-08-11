@@ -1,0 +1,52 @@
+import express, { type Request, type Response } from "express";
+import cors from "cors";
+import env from "./config/env.js";
+import { errorMiddleware } from "./middleware/error.middleware.js";
+import { notFoundMiddleware } from "./middleware/notFound.middleware.js";
+import authRoutes from "./routes/auth.routes.js";
+import customerRoutes from "./routes/customer.routes.js";
+import productRoutes from "./routes/product.routes.js";
+import stockRoutes from "./routes/stock.routes.js";
+import challanRoutes from "./routes/challan.routes.js";
+import invoiceRoutes from "./routes/invoice.routes.js";
+
+const app = express();
+
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS policy does not allow this origin."));
+    },
+    credentials: true,
+  })
+);
+app.use(express.json());
+
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ success: true, message: "API is running" });
+});
+
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ success: true, message: "Nexora API is running. Please access the frontend at http://localhost:5173" });
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/stock", stockRoutes);
+app.use("/api/challans", challanRoutes);
+app.use("/api/invoices", invoiceRoutes);
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+export default app;
