@@ -42,7 +42,6 @@ export async function stockIn(productId: string, quantity: number, reason: strin
       currentStock: product.currentStock + quantity,
       stockMovements: {
         create: {
-          productId,
           quantity,
           type: "IN",
           reason: reason.trim(),
@@ -67,7 +66,6 @@ export async function stockOut(productId: string, quantity: number, reason: stri
       currentStock: product.currentStock - quantity,
       stockMovements: {
         create: {
-          productId,
           quantity,
           type: "OUT",
           reason: reason.trim(),
