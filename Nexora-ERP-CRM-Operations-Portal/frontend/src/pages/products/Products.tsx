@@ -230,38 +230,7 @@ export function Products() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
-                          {p.imageUrl ? (
-                            imageUrls[key] ? (
-                              <img
-                                src={imageUrls[key]}
-                                alt={p.productName}
-                                className="h-full w-full object-cover"
-                                onError={() => {
-                                  console.error('IMAGE LOAD FAILED:', {
-                                    imageKey: key,
-                                    imageUrl: imageUrls[key],
-                                  });
-                                }}
-                              />
-                            ) : imageLoading[key] ? (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                Loading...
-                              </div>
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                Loading...
-                              </div>
-                            )
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                              No image
-                            </div>
-                          )}
-                        </div>
-                        <span className="font-medium text-gray-900">{p.productName}</span>
-                      </div>
+                      <span className="font-medium text-gray-900">{p.productName}</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{p.sku}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{p.category}</td>

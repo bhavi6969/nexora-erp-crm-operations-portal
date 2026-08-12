@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "Nexora ERP-CRM API",
+    "description": "Complete API collection for the Nexora ERP-CRM Operations Portal.\n\n**Base URL:** `{{baseUrl}}`\n\n**Authentication:** All routes except `POST /auth/login` require a Bearer token in the `Authorization` header. After logging in, the token is automatically saved to the `token` collection variable.\n\n**Roles:** `ADMIN` | `SALES` | `ACCOUNTS` | `WAREHOUSE`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",    "value": "http://localhost:5000/api", "type": "string" },
+    { "key": "token",      "value": "",                          "type": "string" },
+    { "key": "customerId", "value": "",                          "type": "string" },
+    { "key": "productId",  "value": "",                          "type": "string" },
+    { "key": "challanId",  "value": "",                          "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Check if the API server is running. No authentication required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  console.log('Token saved to collection variable.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@nexora.com\",\n  \"password\": \"your_password\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Authenticate a user and receive a JWT token. The token is automatically saved to the `token` collection variable.\n\n**Roles:** Public\n\n**Validation:**\n- `email` — required, valid email format\n- `password` — required\n\n**Returns:** `{ token, user: { id, name, email, role } }`"
+          }
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Returns the profile of the currently authenticated user.\n\n**Roles:** Any authenticated user"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page",   "value": "1",  "description": "Page number (default: 1)" },
+                { "key": "limit",  "value": "20", "description": "Items per page (default: 20, max: 100)" },
+                { "key": "search", "value": "", "description": "Search by name, email, mobile, or business name", "disabled": true },
+                { "key": "status", "value": "", "description": "LEAD | ACTIVE | INACTIVE", "disabled": true },
+                { "key": "type",   "value": "", "description": "RETAIL | WHOLESALE | DISTRIBUTOR", "disabled": true }
+              ]
+            },
+            "description": "Retrieve a paginated list of customers.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            },
+            "description": "Retrieve a single customer by ID.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"John Doe\",\n  \"mobile\": \"9876543210\",\n  \"email\": \"john@example.com\",\n  \"businessName\": \"Doe Enterprises\",\n  \"customerType\": \"RETAIL\",\n  \"address\": \"123 Main St, Mumbai\",\n  \"status\": \"LEAD\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] },
+            "description": "Create a new customer.\n\n**Roles:** ADMIN, SALES\n\n**Required:** `customerName`, `mobile` (10–15 digits), `businessName`, `customerType` (`RETAIL`|`WHOLESALE`|`DISTRIBUTOR`), `address`\n\n**Optional:** `email`, `status` (`LEAD`|`ACTIVE`|`INACTIVE`, default: `LEAD`)"
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"John Doe Updated\",\n  \"mobile\": \"9876543211\",\n  \"email\": \"john.updated@example.com\",\n  \"businessName\": \"Doe Enterprises Ltd.\",\n  \"customerType\": \"WHOLESALE\",\n  \"address\": \"456 New St, Mumbai\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            },
+            "description": "Update an existing customer. Partial updates supported.\n\n**Roles:** ADMIN, SALES"
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            },
+            "description": "Delete a customer by ID.\n\n**Roles:** ADMIN, SALES"
+          }
+        },
+        {
+          "name": "Create Follow-Up",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Discussed pricing, customer is interested in bulk order.\",\n  \"followUpDate\": \"2026-08-20T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/followups",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "followups"]
+            },
+            "description": "Log a CRM follow-up activity for a customer.\n\n**Roles:** ADMIN, SALES\n\n**Required:** `note` (string), `followUpDate` (ISO 8601 date string)"
+          }
+        },
+        {
+          "name": "List Follow-Ups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/followups",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "followups"]
+            },
+            "description": "Retrieve all follow-up records for a customer.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Get Customer Challans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/challans",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "challans"]
+            },
+            "description": "Retrieve all challans linked to a specific customer.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page",     "value": "1",    "description": "Page number (default: 1)" },
+                { "key": "limit",    "value": "20",   "description": "Items per page (default: 20, max: 100)" },
+                { "key": "search",   "value": "",     "description": "Search by name, SKU, or category", "disabled": true },
+                { "key": "category", "value": "",     "description": "Filter by category", "disabled": true },
+                { "key": "lowStock", "value": "true", "description": "Only show products where currentStock < minimumStock", "disabled": true }
+              ]
+            },
+            "description": "Retrieve a paginated list of products. `imageUrl` is returned as a presigned S3 URL valid for 1 hour.\n\n**Roles:** ADMIN, WAREHOUSE, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Retrieve a single product. `imageUrl` is a presigned S3 URL valid for 1 hour.\n\n**Roles:** ADMIN, WAREHOUSE, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productName\": \"Widget Pro\",\n  \"sku\": \"WGT-PRO-001\",\n  \"category\": \"Electronics\",\n  \"unitPrice\": 499.99,\n  \"currentStock\": 100,\n  \"minimumStock\": 20,\n  \"warehouseLocation\": \"Rack A3\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "Create a new product.\n\n**Roles:** ADMIN, WAREHOUSE\n\n**Required:** `productName`, `sku`, `category`, `unitPrice` (≥0), `currentStock` (integer ≥0), `minimumStock` (integer ≥0)\n\n**Optional:** `warehouseLocation`"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productName\": \"Widget Pro v2\",\n  \"unitPrice\": 549.99,\n  \"currentStock\": 150,\n  \"minimumStock\": 25,\n  \"warehouseLocation\": \"Rack B1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Update a product. All fields are optional (partial update supported).\n\n**Roles:** ADMIN, WAREHOUSE"
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Permanently delete a product.\n\n**Roles:** ADMIN, WAREHOUSE"
+          }
+        },
+        {
+          "name": "Upload Product Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "Image file (JPEG, PNG, WebP, etc.). Max size: 5 MB."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "image"]
+            },
+            "description": "Upload or replace a product's image. Stored in AWS S3.\n\n**Roles:** ADMIN, WAREHOUSE\n\n**Body:** `multipart/form-data`, field name `image`, max 5 MB, images only.\n\n**Returns:** `{ imageUrl (S3 key), presignedUrl (1h), product }`"
+          }
+        },
+        {
+          "name": "Get Product Image Presigned URL",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/images?filename=products/WGT-PRO-001-1234567890.jpg",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "images"],
+              "query": [
+                { "key": "filename", "value": "products/WGT-PRO-001-1234567890.jpg", "description": "The S3 key stored in the product's `imageUrl` field" }
+              ]
+            },
+            "description": "Generate a presigned S3 URL for a product image by its S3 key.\n\n**Roles:** Public (no auth required)\n\n**Returns:** `{ presignedUrl }` — valid for 1 hour."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "item": [
+        {
+          "name": "List Stock Movements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["stock", "movements"]
+            },
+            "description": "Retrieve the full history of stock movements (IN and OUT).\n\n**Roles:** ADMIN, WAREHOUSE, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Stock In",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 50,\n  \"type\": \"IN\",\n  \"reason\": \"Purchase order received from supplier\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/in", "host": ["{{baseUrl}}"], "path": ["stock", "in"] },
+            "description": "Add stock for a product (inward movement).\n\n**Roles:** ADMIN, WAREHOUSE\n\n**Required:** `productId`, `quantity` (positive integer), `type` (must be `\"IN\"`), `reason`"
+          }
+        },
+        {
+          "name": "Stock Out",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 10,\n  \"type\": \"OUT\",\n  \"reason\": \"Manual adjustment for damaged goods\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/out", "host": ["{{baseUrl}}"], "path": ["stock", "out"] },
+            "description": "Deduct stock for a product (outward movement).\n\n**Roles:** ADMIN, WAREHOUSE\n\n**Required:** `productId`, `quantity` (positive integer), `type` (must be `\"OUT\"`), `reason`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challans",
+      "item": [
+        {
+          "name": "List Challans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"],
+              "query": [
+                { "key": "page",          "value": "1",  "description": "Page number (default: 1, min: 1)" },
+                { "key": "limit",         "value": "20", "description": "Items per page (default: 20, max: 100)" },
+                { "key": "status",        "value": "", "description": "DRAFT | CONFIRMED | CANCELLED", "disabled": true },
+                { "key": "paymentStatus", "value": "", "description": "UNPAID | PAID", "disabled": true },
+                { "key": "search",        "value": "", "description": "Search by challan number or customer name", "disabled": true },
+                { "key": "customerId",    "value": "", "description": "Filter by customer ID", "disabled": true }
+              ]
+            },
+            "description": "Retrieve a paginated list of challans.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Get Challan by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            },
+            "description": "Retrieve full details of a challan including all line items.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Create Challan",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 5 },\n    { \"productId\": \"ANOTHER_PRODUCT_ID\", \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] },
+            "description": "Create a new challan. Starts in `DRAFT` status with `paymentStatus: UNPAID`.\n\n**Roles:** ADMIN, SALES\n\n**Required:** `customerId`, `items` (array of `{ productId, quantity }` — quantity must be a positive integer)"
+          }
+        },
+        {
+          "name": "Update Challan (Draft only)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 10 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            },
+            "description": "Update a challan's customer and/or items. **Only DRAFT challans can be updated.**\n\n**Roles:** ADMIN, SALES"
+          }
+        },
+        {
+          "name": "Confirm Challan",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "confirm"]
+            },
+            "description": "Confirm a DRAFT challan. Deducts inventory for all line items and sets status to `CONFIRMED`.\n\n**Roles:** ADMIN, SALES"
+          }
+        },
+        {
+          "name": "Cancel Challan",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "cancel"]
+            },
+            "description": "Cancel a challan. If it was CONFIRMED, stock is restored.\n\n**Roles:** ADMIN, SALES"
+          }
+        },
+        {
+          "name": "Mark Challan as Paid",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/paid",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "paid"]
+            },
+            "description": "Mark a CONFIRMED challan's payment as PAID.\n\n**Roles:** ADMIN, SALES, ACCOUNTS"
+          }
+        },
+        {
+          "name": "Export Challan PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "pdf"]
+            },
+            "description": "Download a challan as a PDF document.\n\n**Roles:** ADMIN, SALES, ACCOUNTS\n\n**Returns:** `application/pdf`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Export Invoice PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{challanId}}/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "{{challanId}}", "pdf"]
+            },
+            "description": "Generate and download a formal invoice PDF for a challan.\n\n**Roles:** ADMIN, SALES, ACCOUNTS\n\n**Returns:** `application/pdf`"
+          }
+        }
+      ]
+    }
+  ]
+}
