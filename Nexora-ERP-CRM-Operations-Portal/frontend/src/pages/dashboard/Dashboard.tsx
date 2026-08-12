@@ -164,8 +164,11 @@ export function Dashboard() {
           </div>
           <div className="flex h-56 items-end gap-3 px-5 pb-7 pt-8">
             {[35, 54, 42, 72, 60, 88, 48].map((height, index) => (
-              <div key={index} className="flex flex-1 flex-col items-center gap-2">
-                <div className={`w-full rounded-t-sm ${index === 5 ? 'bg-[#8e4cf6]' : 'bg-[#b8c6df]'}`} style={{ height: `${height}%` }} />
+              <div key={index} className="flex flex-1 flex-col items-end justify-end gap-2 h-full">
+                <div
+                  className={`w-full rounded-t-sm ${index === 5 ? 'bg-[#8e4cf6]' : 'bg-[#b8c6df]'}`}
+                  style={{ height: `${height}%` }}
+                />
                 <span className="text-[10px] text-[#75777d]">{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'][index]}</span>
               </div>
             ))}
