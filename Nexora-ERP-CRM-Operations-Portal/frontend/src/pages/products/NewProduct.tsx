@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { productService } from '../../services/product.service';
@@ -6,16 +6,12 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Loader } from '../../components/common/Loader';
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function NewProduct() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     productName: '',
     sku: '',
@@ -26,43 +22,6 @@ export function NewProduct() {
     warehouseLocation: '',
     description: '',
   });
-
-  const validateImageFile = (file: File): string | null => {
-    if (!file) return 'No file selected';
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      return 'Supported file types are JPG, PNG, and WEBP';
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      return 'Image size must be less than 5MB';
-    }
-    return null;
-  };
-
-  const handleFileSelection = (file: File | null) => {
-    console.log('Selected file:', file);
-    if (!file) {
-      setError('No file selected');
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    const validationError = validateImageFile(file);
-    if (validationError) {
-      setError(validationError);
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    console.log('File name:', file.name);
-    console.log('File type:', file.type);
-    console.log('File size:', file.size);
-    setError(null);
-    setSuccessMessage(null);
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,15 +42,7 @@ export function NewProduct() {
         minimumStock: parseInt(formData.minimumStock, 10),
       });
 
-      if (imageFile) {
-        console.log('Uploading image for product:', product.id);
-        const uploadResult = await productService.uploadImage(product.id, imageFile);
-        console.log('Upload result:', uploadResult);
-        setSuccessMessage('Product created and image uploaded successfully');
-      } else {
-        setSuccessMessage('Product created successfully');
-      }
-
+      setSuccessMessage('Product created successfully');
       navigate('/products');
     } catch (err: any) {
       console.error('Product create/upload error:', err);
@@ -100,14 +51,6 @@ export function NewProduct() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
 
   return (
     <div>
@@ -216,46 +159,7 @@ export function NewProduct() {
             />
           </div>
 
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Photo
-            </label>
-            <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <label className="cursor-pointer rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
-                  Choose Image
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      handleFileSelection(file);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-                {imageFile && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(null);
-                    }}
-                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              <p className="text-sm text-slate-500">Upload a product image to display in product listings and details.</p>
-              {imagePreview && (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  <img src={imagePreview} alt="Product preview" className="h-48 w-full object-cover" />
-                </div>
-              )}
-            </div>
-          </div>
+
         </div>
 
         {successMessage && (
