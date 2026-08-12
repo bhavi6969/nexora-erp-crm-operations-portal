@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, AlertTriangle, Upload } from 'lucide-react';
+import { Plus, Search, AlertTriangle } from 'lucide-react';
 import { productService } from '../../services/product.service';
 import type { Product } from '../../types/product.types';
 import { Button } from '../../components/common/Button';
@@ -17,10 +17,6 @@ export function Products() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const [pendingUploadProductId, setPendingUploadProductId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -42,11 +38,6 @@ export function Products() {
     void load();
   }, [fetchProducts]);
 
-  const startUpload = (productId: string) => {
-    setPendingUploadProductId(productId);
-    fileInputRef.current?.click();
-  };
-
   const deleteProduct = async (id: string) => {
     if (!window.confirm('Delete this product?')) return;
     try {
@@ -57,46 +48,6 @@ export function Products() {
       alert('Failed to delete product');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleImageUpload = async (productId: string | null, file: File | null) => {
-    if (!productId || !file) {
-      setPendingUploadProductId(null);
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      setPendingUploadProductId(null);
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      alert('Image size must be less than 5MB');
-      setPendingUploadProductId(null);
-      return;
-    }
-
-    try {
-      setUploadingId(productId);
-      const uploadResult = await productService.uploadImage(productId, file);
-
-      // After upload, fetch the latest product record to get the stored image key
-      let key: string | undefined;
-      try {
-        const updated = await productService.getById(productId);
-        key = updated?.imageUrl;
-      } catch (err) {
-        console.warn('Could not fetch updated product after upload', err);
-      }
-
-      // Refresh products list to ensure DB state is current
-      await fetchProducts();
-    } catch {
-      alert('Failed to upload image');
-    } finally {
-      setUploadingId(null);
-      setPendingUploadProductId(null);
     }
   };
 
@@ -118,23 +69,10 @@ export function Products() {
           </div>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0] ?? null;
-            handleImageUpload(pendingUploadProductId, file);
-            e.target.value = '';
-          }}
-        />
-
         {products.length === 0 ? <EmptyState message="No products found" /> : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
@@ -150,22 +88,6 @@ export function Products() {
                 const lowStock = p.currentStock <= p.minimumStock;
                 return (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">
-                      {uploadingId === p.id ? (
-                        <div className="flex items-center gap-1 text-gray-500 text-sm">
-                          <Loader size="sm" className="animate-spin" />
-                          Uploading...
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => startUpload(p.id)}
-                          className="flex items-center gap-1 text-blue-600 hover:text-blue-900 text-sm"
-                        >
-                          <Upload className="h-4 w-4" />
-                          Upload
-                        </button>
-                      )}
-                    </td>
                     <td className="px-6 py-4 text-sm">
                       <span className="font-medium text-gray-900">{p.productName}</span>
                     </td>
