@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, AlertTriangle, Upload, X } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Upload } from 'lucide-react';
 import { productService } from '../../services/product.service';
 import type { Product } from '../../types/product.types';
 import { Button } from '../../components/common/Button';
@@ -19,8 +19,6 @@ export function Products() {
   const [search, setSearch] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [pendingUploadProductId, setPendingUploadProductId] = useState<string | null>(null);
-  const [viewingImage, setViewingImage] = useState<string | null>(null);
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -43,46 +41,6 @@ export function Products() {
     };
     void load();
   }, [fetchProducts]);
-
-  const loadImageUrls = useCallback(async () => {
-    const newUrls: Record<string, string> = {};
-    await Promise.all(
-      products
-        .filter((product) => product.imageUrl && !imageUrls[product.imageUrl])
-        .map(async (product) => {
-            if (!product.imageUrl) return;
-            const key = product.imageUrl;
-            // If the stored imageUrl is already a full URL (presigned or otherwise), use it directly
-            if (key.startsWith('http')) {
-              newUrls[key] = key;
-              return;
-            }
-
-            setImageLoading((prev) => ({ ...prev, [key]: true }));
-            try {
-              const url = await productService.getImageUrl(key);
-              newUrls[key] = url;
-            } catch (err) {
-              console.error('Failed to get presigned URL for', key, err);
-            } finally {
-              setImageLoading((prev) => ({ ...prev, [key]: false }));
-            }
-          })
-    );
-
-    if (Object.keys(newUrls).length > 0) {
-      setImageUrls((prev) => ({ ...prev, ...newUrls }));
-    }
-  }, [products, imageUrls]);
-
-  useEffect(() => {
-    if (products.length > 0) {
-      const load = async () => {
-        await loadImageUrls();
-      };
-      void load();
-    }
-  }, [products, loadImageUrls]);
 
   const startUpload = (productId: string) => {
     setPendingUploadProductId(productId);
@@ -130,25 +88,6 @@ export function Products() {
         key = updated?.imageUrl;
       } catch (err) {
         console.warn('Could not fetch updated product after upload', err);
-      }
-
-      // If product.imageUrl is already a full URL, use it directly
-      if (key && key.startsWith('http')) {
-        setImageUrls((prev) => ({ ...prev, [key]: key }));
-      } else {
-        // prefer presignedUrl from upload response when available
-        let presignedUrl = uploadResult?.presignedUrl;
-        if (!presignedUrl && key) {
-          try {
-            presignedUrl = await productService.getImageUrl(key);
-          } catch (err) {
-            console.error('Failed to get presigned URL after upload for', key, err);
-          }
-        }
-
-        if (key && presignedUrl) {
-          setImageUrls((prev) => ({ ...prev, [key]: presignedUrl }));
-        }
       }
 
       // Refresh products list to ensure DB state is current
@@ -267,20 +206,6 @@ export function Products() {
         )}
       </div>
 
-      {/* Image Preview Modal */}
-      {viewingImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-4xl max-h-full">
-            <button
-              onClick={() => setViewingImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
-            >
-              <X className="h-8 w-8" />
-            </button>
-            <img src={viewingImage} alt="Product" className="max-w-full max-h-[80vh] object-contain rounded" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
