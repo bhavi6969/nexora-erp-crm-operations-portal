@@ -35,7 +35,7 @@ export function NewProduct() {
     setLoading(true);
 
     try {
-      const product = await productService.create({
+      await productService.create({
         ...formData,
         unitPrice: parseFloat(formData.unitPrice),
         currentStock: parseInt(formData.currentStock, 10),
