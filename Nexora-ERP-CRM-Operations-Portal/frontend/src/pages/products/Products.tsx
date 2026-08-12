@@ -21,7 +21,6 @@ export function Products() {
   const [pendingUploadProductId, setPendingUploadProductId] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-  const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -210,7 +209,6 @@ export function Products() {
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((p) => {
                 const lowStock = p.currentStock <= p.minimumStock;
-                const key = p.imageUrl ?? '';
                 return (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">
